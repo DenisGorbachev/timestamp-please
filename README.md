@@ -5,6 +5,7 @@
 # Unix timestamp newtype with chrono and time interop
 
 [![Build](https://github.com/DenisGorbachev/timestamp-please/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisGorbachev/timestamp-please)
+[![Documentation](https://docs.rs/timestamp-please/badge.svg)](https://docs.rs/timestamp-please)
 
 <!-- crate documentation start -->
 
