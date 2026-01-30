@@ -1,12 +1,12 @@
 [package]
-name = "rust-public-lib-template"
+name = "timestamp-please"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85.0"
-description = "A template for a public Rust library"
+description = "Sometimes you just need a UNIX timestamp"
 license = "Apache-2.0 OR MIT"
-homepage = "https://github.com/DenisGorbachev/rust-public-lib-template"
-repository = "https://github.com/DenisGorbachev/rust-public-lib-template"
+homepage = "https://github.com/DenisGorbachev/timestamp-please"
+repository = "https://github.com/DenisGorbachev/timestamp-please"
 readme = "README.md"
 keywords = []
 categories = []
@@ -28,7 +28,7 @@ exclude = [
 ]
 
 [package.metadata.details]
-title = "A template for a public Rust library"
+title = "Sometimes you just need a UNIX timestamp"
 tagline = ""
 summary = ""
 announcement = ""
@@ -57,3 +57,8 @@ ignored = [
     "stub-macro",
     "subtype",
 ]
+
+
+
+
+
