@@ -3,7 +3,7 @@ name = "timestamp-please"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85.0"
-description = "Sometimes you just need a UNIX timestamp"
+description = "Unix timestamp newtype with chrono and time interop"
 license = "Apache-2.0 OR MIT"
 homepage = "https://github.com/DenisGorbachev/timestamp-please"
 repository = "https://github.com/DenisGorbachev/timestamp-please"
@@ -28,37 +28,18 @@ exclude = [
 ]
 
 [package.metadata.details]
-title = "Sometimes you just need a UNIX timestamp"
+title = "Unix timestamp newtype with chrono and time interop"
 tagline = ""
 summary = ""
 announcement = ""
-readme = { generate = false }
 
 [dependencies]
-derive-getters = { version = "0.5.0", features = ["auto_copy_getters"] }
-derive-new = "0.7.0"
-derive_more = { version = "2.1.1", features = ["full"] }
-errgonomic = { git = "https://github.com/DenisGorbachev/errgonomic" }
-itertools = "0.14.0"
-standard-traits = { git = "https://github.com/DenisGorbachev/standard-traits" }
-strum = { version = "0.27.2", features = ["derive"] }
-stub-macro = { version = "0.2.1" }
-subtype = { git = "https://github.com/DenisGorbachev/subtype" }
+chrono = { version = "0.4", optional = true, default-features = true }
+rkyv = { version = "0.8", optional = true }
+#errgonomic = { version = "0.5" }
+serde = { version = "1.0", optional = true, features = ["derive"] }
+time = { version = "0.3", optional = true }
 
-[package.metadata.cargo-machete]
-ignored = [
-    "derive-getters",
-    "derive-new",
-    "derive_more",
-    "errgonomic",
-    "itertools",
-    "standard-traits",
-    "strum",
-    "stub-macro",
-    "subtype",
-]
-
-
-
-
-
+[features]
+default = ["std"]
+std = []
