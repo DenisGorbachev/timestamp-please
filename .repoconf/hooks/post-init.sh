@@ -24,7 +24,7 @@ fi
 (
   cd "$dir"
 
-  files=("README.md" "LICENSE-APACHE" "LICENSE-MIT")
+  files=("README.md")
   for file in "${files[@]}"; do
     if [[ -f "$file" ]]; then
       rm "$file"
