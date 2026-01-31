@@ -181,39 +181,6 @@ pub fn pow10_u128(exp: u32) -> Option<u128> {
     core::iter::repeat_n(10u128, exp as usize).try_fold(1u128, |acc, value| acc.checked_mul(value))
 }
 
-#[inline]
-pub fn scale_u128(value: u128, diff: i64) -> Option<u128> {
-    if diff == 0 {
-        return Some(value);
-    }
-
-    if diff > 0 {
-        let exp = diff as u64;
-        if exp > MAX_POW10_U128 {
-            return if value == 0 { Some(0) } else { None };
-        }
-        let factor = pow10_u128(exp as u32)?;
-        return value.checked_mul(factor);
-    }
-
-    let exp = diff.unsigned_abs();
-    if exp > MAX_POW10_U128 {
-        return Some(0);
-    }
-    let factor = pow10_u128(exp as u32)?;
-    Some(value / factor)
-}
-
-#[inline]
-pub fn clamp_u128_to_u64(value: u128) -> u64 {
-    if value > u64::MAX as u128 { u64::MAX } else { value as u64 }
-}
-
-#[inline]
-pub fn nanoseconds_to_timestamp_value(total_ns: u128, power: i32) -> Option<u128> {
-    scale_u128(total_ns, -9 - i64::from(power))
-}
-
 #[cfg(feature = "std")]
 mod interop_std {
     use super::*;
@@ -264,27 +231,44 @@ mod interop_time {
 #[cfg(feature = "chrono")]
 mod interop_chrono {
     use super::*;
-    use chrono::TimeZone;
+    use chrono::{DateTime, TimeZone, Utc};
 
-    impl<const POWER: i32, Tz: TimeZone> From<chrono::DateTime<Tz>> for Timestamp<u64, POWER> {
+    impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for Timestamp<i128, NANO> {
+        type Error = UnrepresentableChronoDateTimeError;
+
         #[inline]
-        fn from(dt: chrono::DateTime<Tz>) -> Self {
-            let nanos_opt = dt.timestamp_nanos_opt();
-            let nanos = match nanos_opt {
-                Some(value) => value,
-                None => {
-                    if dt.timestamp() <= 0 {
-                        return Timestamp::new(0);
-                    }
-                    return Timestamp::new(u64::MAX);
-                }
-            };
-            if nanos <= 0 {
-                return Timestamp::new(0);
-            }
-            let nanos_u128 = nanos as u128;
-            let value_u128 = nanoseconds_to_timestamp_value(nanos_u128, POWER).unwrap_or(u128::MAX);
-            Timestamp::new(clamp_u128_to_u64(value_u128))
+        fn try_from(dt: DateTime<Tz>) -> Result<Self, Self::Error> {
+            dt.timestamp_nanos_opt()
+                .map(i128::from)
+                .map(Self::new)
+                .ok_or(UnrepresentableChronoDateTimeError)
         }
     }
+
+    impl TryFrom<Timestamp<i128, NANO>> for DateTime<Utc> {
+        type Error = UnrepresentableChronoDateTimeError;
+
+        #[inline]
+        fn try_from(timestamp: Timestamp<i128, NANO>) -> Result<Self, Self::Error> {
+            let nanos: i64 = timestamp
+                .value
+                .try_into()
+                .map_err(|_| UnrepresentableChronoDateTimeError)?;
+            Ok(Self::from_timestamp_nanos(nanos))
+        }
+    }
+
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    pub struct UnrepresentableChronoDateTimeError;
+
+    impl fmt::Display for UnrepresentableChronoDateTimeError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str("chrono timestamp is out of range for nanosecond precision")
+        }
+    }
+
+    impl core::error::Error for UnrepresentableChronoDateTimeError {}
 }
+
+#[cfg(feature = "chrono")]
+pub use interop_chrono::*;
