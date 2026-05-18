@@ -122,6 +122,9 @@ pub const MILLI: i32 = -3;
 pub const MICRO: i32 = -6;
 pub const NANO: i32 = -9;
 
+pub type TimestampMs = Timestamp<u128, MILLI>;
+pub type TimestampNs = Timestamp<u128, NANO>;
+
 impl From<Duration> for Timestamp<u64, UNO> {
     #[inline]
     fn from(duration: Duration) -> Self {
