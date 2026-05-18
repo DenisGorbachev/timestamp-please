@@ -184,25 +184,43 @@ pub fn pow10_u128(exp: u32) -> Option<u128> {
 #[cfg(feature = "std")]
 mod interop_std {
     use super::*;
+    use std::time::*;
 
     macro_rules! impl_try_from_system_time {
         ($target:ty) => {
-            impl TryFrom<std::time::SystemTime> for $target {
-                type Error = std::time::SystemTimeError;
+            impl TryFrom<SystemTime> for $target {
+                type Error = SystemTimeError;
 
                 #[inline]
-                fn try_from(system_time: std::time::SystemTime) -> Result<Self, Self::Error> {
-                    let duration = system_time.duration_since(std::time::UNIX_EPOCH)?;
+                fn try_from(system_time: SystemTime) -> Result<Self, Self::Error> {
+                    let duration = system_time.duration_since(UNIX_EPOCH)?;
                     Ok(Self::from(duration))
                 }
             }
         };
     }
 
-    impl_try_from_system_time!(Timestamp<u64, UNO>);
-    impl_try_from_system_time!(Timestamp<u128, MILLI>);
-    impl_try_from_system_time!(Timestamp<u128, MICRO>);
-    impl_try_from_system_time!(Timestamp<u128, NANO>);
+    macro_rules! impl_now {
+        ($target:ty) => {
+            impl $target {
+                pub fn now() -> Self {
+                    Self::try_from(SystemTime::now()).expect("always succeeds because UNIX_EPOCH is the minimum possible value")
+                }
+            }
+        };
+    }
+
+    macro_rules! impl_all {
+        ($target:ty) => {
+            impl_try_from_system_time!($target);
+            impl_now!($target);
+        };
+    }
+
+    impl_all!(Timestamp<u64, UNO>);
+    impl_all!(Timestamp<u128, MILLI>);
+    impl_all!(Timestamp<u128, MICRO>);
+    impl_all!(Timestamp<u128, NANO>);
 }
 
 #[cfg(feature = "time")]
