@@ -186,15 +186,15 @@ mod interop_std {
     use super::*;
     use std::time::*;
 
-    macro_rules! impl_try_from_system_time {
+    macro_rules! impl_from_system_time {
         ($target:ty) => {
-            impl TryFrom<SystemTime> for $target {
-                type Error = SystemTimeError;
-
+            impl From<SystemTime> for $target {
                 #[inline]
-                fn try_from(system_time: SystemTime) -> Result<Self, Self::Error> {
-                    let duration = system_time.duration_since(UNIX_EPOCH)?;
-                    Ok(Self::from(duration))
+                fn from(system_time: SystemTime) -> Self {
+                    let duration = system_time
+                        .duration_since(UNIX_EPOCH)
+                        .expect("always succeeds because UNIX_EPOCH is the minimum possible value");
+                    Self::from(duration)
                 }
             }
         };
@@ -204,7 +204,7 @@ mod interop_std {
         ($target:ty) => {
             impl $target {
                 pub fn now() -> Self {
-                    Self::try_from(SystemTime::now()).expect("always succeeds because UNIX_EPOCH is the minimum possible value")
+                    Self::from(SystemTime::now())
                 }
             }
         };
@@ -212,7 +212,7 @@ mod interop_std {
 
     macro_rules! impl_all {
         ($target:ty) => {
-            impl_try_from_system_time!($target);
+            impl_from_system_time!($target);
             impl_now!($target);
         };
     }
