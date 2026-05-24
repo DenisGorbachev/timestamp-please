@@ -2,7 +2,7 @@
 name = "timestamp-please"
 version = "0.2.0"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.93.1"
 description = "Unix timestamp newtype with chrono and time interop"
 license = "Apache-2.0 OR MIT"
 homepage = "https://github.com/DenisGorbachev/timestamp-please"
@@ -15,16 +15,19 @@ exclude = [
     "*.local.*",
     "doc/dev",
     "specs",
+    "AGENTS.ts",
     "README.ts",
     "AGENTS*.md",
     "CLAUDE*.md",
+    "deno.lock",
     "deno.json",
     "commitlint.config.mjs",
+    "fnox.toml",
     "lefthook.yml",
     "mise.toml",
     "rumdl.toml",
     "rustfmt.toml",
-    "yolobox"
+    ".yolobox"
 ]
 
 [package.metadata.details]

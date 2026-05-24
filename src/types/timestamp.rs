@@ -46,17 +46,30 @@ impl<V, const POWER: i32> Timestamp<V, POWER> {
         }
 
         if power > 0 {
+            let scale = match usize::try_from(power) {
+                Ok(scale) => scale,
+                Err(_) => return Err(fmt::Error),
+            };
             return f
                 .write_str(sign)
                 .and_then(|_| f.write_str(digits))
-                .and_then(|_| write_zeros(f, power as usize));
+                .and_then(|_| write_zeros(f, scale));
         }
 
-        let scale = (-power) as usize;
+        let scale = match power
+            .checked_neg()
+            .and_then(|power| usize::try_from(power).ok())
+        {
+            Some(scale) => scale,
+            None => return Err(fmt::Error),
+        };
         f.write_str(sign)?;
 
         if digits.len() > scale {
-            let split = digits.len() - scale;
+            let split = match digits.len().checked_sub(scale) {
+                Some(split) => split,
+                None => return Err(fmt::Error),
+            };
             let (int_part, frac_part) = digits.split_at(split);
             return f
                 .write_str(int_part)
@@ -64,8 +77,12 @@ impl<V, const POWER: i32> Timestamp<V, POWER> {
                 .and_then(|_| f.write_str(frac_part));
         }
 
+        let zero_count = match scale.checked_sub(digits.len()) {
+            Some(zero_count) => zero_count,
+            None => return Err(fmt::Error),
+        };
         f.write_str("0.")
-            .and_then(|_| write_zeros(f, scale.saturating_sub(digits.len())))
+            .and_then(|_| write_zeros(f, zero_count))
             .and_then(|_| f.write_str(digits))
     }
 }
