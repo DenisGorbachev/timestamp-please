@@ -78,3 +78,9 @@ Requirements:
 * Must contain a `use super::*;` declaration
 
 ## std interop module
+
+## `pub mod as_string`
+
+* Must be gated behind `serde` feature
+* Must contain `pub fn serialize` and `pub fn deserialize`
+  * Must operate on `Timestamp`
