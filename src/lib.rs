@@ -7,3 +7,8 @@ extern crate std;
 
 mod types;
 pub use types::*;
+
+#[cfg(feature = "serde")]
+pub mod as_string;
+#[cfg(feature = "serde")]
+pub use as_string::*;
