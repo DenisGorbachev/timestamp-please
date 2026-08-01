@@ -204,7 +204,10 @@ pub fn pow10_u128(exp: u32) -> Option<u128> {
 #[cfg(feature = "std")]
 mod interop_std {
     use super::*;
+    use core::num::TryFromIntError;
+    use errgonomic::handle;
     use std::time::*;
+    use thiserror::Error;
 
     macro_rules! impl_from_system_time {
         ($target:ty) => {
@@ -241,11 +244,66 @@ mod interop_std {
     impl_all!(Timestamp<u128, MILLI>);
     impl_all!(Timestamp<u128, MICRO>);
     impl_all!(Timestamp<u128, NANO>);
+
+    impl TryFrom<Duration> for Timestamp<u64, MILLI> {
+        type Error = TimestampTryNowError;
+
+        /// PRUNING: converts the duration to whole milliseconds, discarding the sub-millisecond remainder because this timestamp cannot represent it.
+        #[inline]
+        fn try_from(duration: Duration) -> Result<Self, Self::Error> {
+            use TimestampTryNowError::*;
+
+            let milliseconds = duration.as_millis();
+            let value = handle!(u64::try_from(milliseconds), TryFromFailed, duration, milliseconds);
+            Ok(Self::new(value))
+        }
+    }
+
+    impl TryFrom<SystemTime> for Timestamp<u64, MILLI> {
+        type Error = TimestampTryNowError;
+
+        /// PRUNING: converts the system time to whole milliseconds, discarding the sub-millisecond remainder because this timestamp cannot represent it.
+        #[inline]
+        fn try_from(system_time: SystemTime) -> Result<Self, Self::Error> {
+            use TimestampTryNowError::*;
+
+            let duration = handle!(system_time.duration_since(UNIX_EPOCH), DurationSinceFailed, system_time);
+            Self::try_from(duration)
+        }
+    }
+
+    macro_rules! impl_try_now {
+        ($target:ty) => {
+            impl $target {
+                /// PRUNING: reports the current time in whole milliseconds, discarding the sub-millisecond remainder because this timestamp cannot represent it.
+                #[inline]
+                pub fn try_now() -> Result<Self, TimestampTryNowError> {
+                    Self::try_from(SystemTime::now())
+                }
+            }
+        };
+    }
+
+    impl_try_now!(Timestamp<u64, MILLI>);
+
+    #[derive(Error, Debug)]
+    pub enum TimestampTryNowError {
+        #[error("current system time is before the Unix epoch")]
+        DurationSinceFailed { source: SystemTimeError, system_time: SystemTime },
+        #[error("duration is outside the range of a `u64` millisecond timestamp: {milliseconds} milliseconds")]
+        TryFromFailed { source: TryFromIntError, duration: Duration, milliseconds: u128 },
+    }
 }
+
+#[cfg(feature = "std")]
+pub use interop_std::*;
 
 #[cfg(feature = "time")]
 mod interop_time {
     use super::*;
+    use core::num::TryFromIntError;
+    use errgonomic::{handle, handle_opt};
+    use thiserror::Error;
     use time::OffsetDateTime;
     use time::error::ComponentRange;
 
@@ -264,7 +322,38 @@ mod interop_time {
             OffsetDateTime::from_unix_timestamp_nanos(timestamp.value)
         }
     }
+
+    impl TryFrom<OffsetDateTime> for Timestamp<u64, MILLI> {
+        type Error = TimestampOffsetDateTimeConversionError;
+
+        /// PRUNING: converts the offset date-time to whole milliseconds, discarding the sub-millisecond remainder because this timestamp cannot represent it.
+        #[inline]
+        fn try_from(date_time: OffsetDateTime) -> Result<Self, Self::Error> {
+            use TimestampOffsetDateTimeConversionError::*;
+
+            let seconds = handle!(u64::try_from(date_time.unix_timestamp()), TryFromFailed, date_time);
+            let value = handle_opt!(
+                seconds
+                    .checked_mul(1_000)
+                    .and_then(|milliseconds| milliseconds.checked_add(u64::from(date_time.millisecond()))),
+                ValueOutOfRange,
+                date_time
+            );
+            Ok(Self::new(value))
+        }
+    }
+
+    #[derive(Error, Debug)]
+    pub enum TimestampOffsetDateTimeConversionError {
+        #[error("offset date-time '{date_time}' is before the Unix epoch")]
+        TryFromFailed { source: TryFromIntError, date_time: OffsetDateTime },
+        #[error("offset date-time '{date_time}' is outside the range of a `u64` millisecond timestamp")]
+        ValueOutOfRange { date_time: OffsetDateTime },
+    }
 }
+
+#[cfg(feature = "time")]
+pub use interop_time::*;
 
 #[cfg(feature = "chrono")]
 mod interop_chrono {
