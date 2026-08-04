@@ -26,6 +26,9 @@ impl<V, const POWER: i32> Timestamp<V, POWER> {
         }
     }
 
+    /// Returns the underlying storage value.
+    ///
+    /// A generic `Into<V>` implementation would conflict with `core`'s blanket `Into` implementation, while the corresponding generic `From<Timestamp<V, POWER>> for V` implementation is prohibited by the orphan rule.
     #[inline]
     pub fn into_value(self) -> V {
         self.value
@@ -143,6 +146,7 @@ pub type TimestampMs = Timestamp<u128, MILLI>;
 pub type TimestampNs = Timestamp<u128, NANO>;
 
 impl From<Duration> for Timestamp<u64, UNO> {
+    /// PRUNING: converts the duration to whole seconds, discarding the subsecond remainder because this timestamp cannot represent it.
     #[inline]
     fn from(duration: Duration) -> Self {
         Self::new(duration.as_secs())
@@ -150,6 +154,7 @@ impl From<Duration> for Timestamp<u64, UNO> {
 }
 
 impl From<Duration> for Timestamp<u128, UNO> {
+    /// PRUNING: converts the duration to whole seconds, discarding the subsecond remainder because this timestamp cannot represent it.
     #[inline]
     fn from(duration: Duration) -> Self {
         Self::new(duration.as_secs() as u128)
@@ -157,6 +162,7 @@ impl From<Duration> for Timestamp<u128, UNO> {
 }
 
 impl From<Duration> for Timestamp<u128, MILLI> {
+    /// PRUNING: converts the duration to whole milliseconds, discarding the sub-millisecond remainder because this timestamp cannot represent it.
     #[inline]
     fn from(duration: Duration) -> Self {
         Self::new(duration.as_millis())
@@ -164,6 +170,7 @@ impl From<Duration> for Timestamp<u128, MILLI> {
 }
 
 impl From<Duration> for Timestamp<u128, MICRO> {
+    /// PRUNING: converts the duration to whole microseconds, discarding the sub-microsecond remainder because this timestamp cannot represent it.
     #[inline]
     fn from(duration: Duration) -> Self {
         Self::new(duration.as_micros())
@@ -210,8 +217,9 @@ mod interop_std {
     use thiserror::Error;
 
     macro_rules! impl_from_system_time {
-        ($target:ty) => {
+        ($(#[$meta:meta])* $target:ty) => {
             impl From<SystemTime> for $target {
+                $(#[$meta])*
                 #[inline]
                 fn from(system_time: SystemTime) -> Self {
                     let duration = system_time
@@ -224,8 +232,9 @@ mod interop_std {
     }
 
     macro_rules! impl_now {
-        ($target:ty) => {
+        ($(#[$meta:meta])* $target:ty) => {
             impl $target {
+                $(#[$meta])*
                 pub fn now() -> Self {
                     Self::from(SystemTime::now())
                 }
@@ -234,15 +243,24 @@ mod interop_std {
     }
 
     macro_rules! impl_all {
-        ($target:ty) => {
-            impl_from_system_time!($target);
-            impl_now!($target);
+        ($(#[$meta:meta])* $target:ty) => {
+            impl_from_system_time!($(#[$meta])* $target);
+            impl_now!($(#[$meta])* $target);
         };
     }
 
-    impl_all!(Timestamp<u64, UNO>);
-    impl_all!(Timestamp<u128, MILLI>);
-    impl_all!(Timestamp<u128, MICRO>);
+    impl_all!(
+        /// PRUNING: stores time in whole seconds, discarding the subsecond remainder because this timestamp cannot represent it.
+        Timestamp<u64, UNO>
+    );
+    impl_all!(
+        /// PRUNING: stores time in whole milliseconds, discarding the sub-millisecond remainder because this timestamp cannot represent it.
+        Timestamp<u128, MILLI>
+    );
+    impl_all!(
+        /// PRUNING: stores time in whole microseconds, discarding the sub-microsecond remainder because this timestamp cannot represent it.
+        Timestamp<u128, MICRO>
+    );
     impl_all!(Timestamp<u128, NANO>);
 
     impl TryFrom<Duration> for Timestamp<u64, MILLI> {
