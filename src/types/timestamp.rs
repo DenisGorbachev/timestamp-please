@@ -1,5 +1,6 @@
 use core::borrow::{Borrow, BorrowMut};
 use core::fmt;
+use core::iter::repeat_n;
 use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 
@@ -196,7 +197,7 @@ impl From<Timestamp<u64, NANO>> for Duration {
 #[inline]
 #[doc(hidden)]
 pub fn write_zeros(f: &mut impl fmt::Write, count: usize) -> fmt::Result {
-    core::iter::repeat_n("0", count).try_for_each(|zero| f.write_str(zero))
+    repeat_n("0", count).try_for_each(|zero| f.write_str(zero))
 }
 
 #[inline]
@@ -205,7 +206,7 @@ pub fn pow10_u128(exp: u32) -> Option<u128> {
         return None;
     }
 
-    core::iter::repeat_n(10u128, exp as usize).try_fold(1u128, |acc, value| acc.checked_mul(value))
+    repeat_n(10u128, exp as usize).try_fold(1u128, |acc, value| acc.checked_mul(value))
 }
 
 #[cfg(feature = "std")]
@@ -377,6 +378,7 @@ pub use interop_time::*;
 mod interop_chrono {
     use super::*;
     use chrono::{DateTime, TimeZone, Utc};
+    use core::error::Error;
 
     impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for Timestamp<i128, NANO> {
         type Error = UnrepresentableChronoDateTimeError;
@@ -412,7 +414,7 @@ mod interop_chrono {
         }
     }
 
-    impl core::error::Error for UnrepresentableChronoDateTimeError {}
+    impl Error for UnrepresentableChronoDateTimeError {}
 }
 
 #[cfg(feature = "chrono")]

@@ -1,13 +1,13 @@
-[package]
-name = "timestamp-please"
+[workspace]
+resolver = "3"
+
+[workspace.package]
 version = "0.2.0"
 edition = "2024"
 rust-version = "1.93.1"
-description = "Unix timestamp newtype with chrono and time interop"
 license = "Apache-2.0 OR MIT"
 homepage = "https://github.com/DenisGorbachev/timestamp-please"
 repository = "https://github.com/DenisGorbachev/timestamp-please"
-readme = "README.md"
 keywords = []
 categories = []
 exclude = [
@@ -23,18 +23,48 @@ exclude = [
     "deno.json",
     "commitlint.config.mjs",
     "fnox.toml",
-    "lefthook.yml",
     "mise.toml",
     "rumdl.toml",
     "rustfmt.toml",
     ".yolobox"
 ]
 
+[workspace.metadata.details]
+name = "timestamp-please"
+title = "Unix timestamp newtype with chrono and time interop"
+readme = { generate = true }
+
+[workspace.lints.rust]
+redundant_imports = "deny"
+unused_import_braces = "deny"
+# unused_qualifications must not be "deny" because our code style has multiple `use Foo::*;`, and some macros (derive_more::Display, strum::Display, strum::EnumString) produce code with full qualifications
+# unused_qualifications = "deny"
+
+[workspace.lints.clippy]
+absolute_paths = "deny"
+arithmetic_side_effects = "deny"
+
+[package]
+name = "timestamp-please"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Unix timestamp newtype with chrono and time interop"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+exclude.workspace = true
+
 [package.metadata.details]
 title = "Unix timestamp newtype with chrono and time interop"
 tagline = ""
 summary = ""
 announcement = ""
+
+[lints]
+workspace = true
 
 [dependencies]
 chrono = { version = "0.4", optional = true, default-features = true }

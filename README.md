@@ -17,6 +17,10 @@
 cargo add timestamp-please
 ```
 
+## Other packages
+
+This workspace has no other packages.
+
 ## Gratitude
 
 Like the project? [⭐ Star this repo](https://github.com/DenisGorbachev/timestamp-please) on GitHub!
