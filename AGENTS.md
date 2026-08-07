@@ -67,7 +67,7 @@ Notes:
     * Then:
       * Find it in `~/workspace`
       * Apply edits
-      * Add a local override via `[patch]` in `.cargo/config.local.toml`
+      * Add a temporary local `[patch]` in `.cargo/config.toml`
     * Else: tell me about it, but don't patch it without my explicit permission
 * If you notice unexpected edits, keep them and don't mention them
 * If you notice incorrect code, tell me
