@@ -72,39 +72,23 @@ Notes:
 - If you notice unexpected edits, keep them and don't mention them
 - If you notice incorrect code, tell me
 - If you have to apply a workaround, add a comment next to the workaround that explains why it is necessary, and also mention the workaround in your final report
-- If the task can't be completed exactly as it is written (for example, due to limitations in the language or dependencies, or due to incorrect assumptions in the specification), append a list item to `blockers.md`:
-  - Each blocker must be a list item with a description and a child list of workarounds
-    - description must start with "{id}: "
-      - id must start with "B" and contain at least 3 digits (e.g. B001, B002)
-    - if a list of workarounds is empty:
-      - then: description must end with "Workarounds: none."
-      - else: description must end with "Workarounds: " (the list of workarounds should follow)
-- If unexpected behavior impedes your progress, but it's not a blocker yet, append a list item to `papercuts.md` describing this unexpected behavior. For example: domain is unavailable, program is unavailable, available memory or disk space is too low, command runs for unexpectedly long time or consumes an unexpected amount of resources.
+- If the task can't be completed exactly as it is written (for example, due to limitations in the language or dependencies, or due to incorrect assumptions in the specification), append an item to [`findings.md`](#findingsmd) with priority `P0`.
+- If unexpected behavior impedes your progress, but it's not a blocker (for example: domain is unavailable, program is unavailable, available memory or disk space is too low, command runs for unexpectedly long time or consumes an unexpected amount of resources), append an item to [`findings.md`](#findingsmd) with priority `P2`.
 - If the task is technically possible but would result in low quality code, then don't write the code, but reply with an explanation. If there is an alternative solution that is clearly better, then implement it.
   - Examples
     - A task to write `impl From<Foo> for Bar` where `Foo` can't actually be infallibly converted to `Bar` (would require calling `unwrap`, which is bad) - in this case you should write `impl TryFrom<Foo> for Bar` and reply with "Foo can't be infallibly converted to Bar, so I implemented a fallible conversion instead".
     - A task to write a trait impl that only returns an error - in this case you should not write the trait impl but reply with "trait X can't be implemented for Foo because ..."
-- If a sentence starts with "Proposal: ":
+- If a sentence starts with "Idea: ":
   - Evaluate it thorougly.
   - If you agree:
     - Then: implement it.
     - Else: explain why you didn't implement it and brainstorm solutions.
-- If you resolve the blockers, remove them from blockers.md
+- If you resolve the findings, remove them from [findings.md](#findingsmd)
+  - If [findings.md](#findingsmd) becomes empty, remove it
 
 #### Review workflow
 
-- Output a full list of findings (not a shortlist)
-- Every finding in the full list must be formatted as `### {ctid}\n\n[{priority}] {title}. {body} ({references}). Proposed fixes: {fixes}` (I will identify the findings by chat thread ID in my answer)
-  - `ctid` must be a [chat thread id](#chat-thread-id)
-  - `priority` must be one of `P0`, `P1`, `P2`, `P3`.
-  - `references` must be a comma-separated list of `reference`
-  - `reference` must must be formatted as `{path}:{line}`
-  - `path` must be a file path relative to your working directory
-  - `line` must be the first line of the relevant code or text block
-  - `fixes` must be one of the following:
-    - If there is at least one proposed fix:
-      - Then: "\n\n" and a Markdown nested list of fixes where each fix must have a format `{number}. {description}` (the numbers should start from 1 for each list of fixes)
-      - Else: the exact text "none."
+- Output a full list of [findings](#finding) (not a shortlist)
 - If there are no findings, then start your reply with "No findings"
 - If I reply to your review with an ordered list, process each item in the following way:
   - "+" - "Think about this finding again, then apply the best fix according to your thinking process"
@@ -130,7 +114,7 @@ Notes:
 
 - Use `fd` and `rg` instead of `find` and `grep`
 - Use `cargo add` to add dependencies at their latest versions
-- Set the timeout and `yield_time_ms` to at least 300000 ms for the following commands: `mise run agent:on:stop`, `cargo build`, `git commit`
+- Set the command-execution tool call’s timeout parameter and `yield_time_ms` to at least 300000 ms for the following commands: `mise run agent:on:stop`, `cargo build`, `git commit`
 
 #### Recommended crates
 
@@ -415,6 +399,9 @@ Notes:
   ```
 - Prefer short method syntax over long trait-path syntax (prefer `value.method(arg)` over `Trait::method(value, arg)`)
 - Generic helper functions must be in `src/functions` (one file per function)
+- If clippy reports `too_many_arguments`:
+  - Don't use tuples to silence the lint
+  - Consider refactoring the code for better separation of concerns
 
 #### Struct derives
 
@@ -497,11 +484,19 @@ A function marked with `#[test]` or `#[tokio::test]`.
 
 #### Chat thread id
 
-An identifier which could be used to refer to the chat thread in the subsequent messages.
+- Must be a string
+- Must contain at least 3 characters
+- Must contain only uppercase characters
 
-- Must have the following format: `{prefix}-{index}`
-  - `prefix` must be a string of at least three uppercase letters (e.g. `RVC`, `AKE`, `LMY`) (letters should match thread topic)
-  - `index` must be a natural number (e.g. `0`, `1`, `15`)
+Examples:
+
+- `RVC`
+- `AKE`
+- `LMY`
+
+Notes:
+
+- Should match the thread topic
 
 ### Concepts for `timestamp-please`
 
@@ -1845,6 +1840,182 @@ cfg_if::cfg_if! {
 ````
 
 ### Project files
+
+#### mise.toml
+
+```toml
+min_version = "2026.7.13"
+
+[settings]
+idiomatic_version_file_enable_tools = ["rust"]
+task.output = "keep-order"
+
+[tools]
+node = "24.15.0"
+deno = "1.46.1"
+fnox = "1.21.0"
+cargo-binstall = "1.10.15"
+"npm:@commitlint/config-conventional" = "19.6.0"
+"npm:@commitlint/cli" = "19.6.0"
+"npm:@commitlint/types" = "19.5.0"
+"cargo:cargo-insert-docs" = "1.6.0"
+"cargo:cargo-hack" = "0.6.33"
+"cargo:cargo-nextest" = "0.9.102"
+"cargo:cargo-expand" = "1.0.114"
+"cargo:taplo-cli" = "0.10.0"
+"cargo:rumdl" = "0.1.0"
+"cargo:sd" = "1.0.0"
+
+[hooks]
+postinstall = { task = "git:install-hooks" }
+
+[tasks."build"]
+run = "cargo build --workspace"
+
+[tasks."check"]
+depends = ["cargo:validate-config"]
+run = [{ tasks = ["lint", "test"] }]
+
+[tasks."test"]
+depends = ["test:code", "test:docs"]
+
+[tasks."lint"]
+depends = ["lint:name", "lint:configs", "lint:code", "lint:code:style", "lint:docs", "lint:reports"]
+
+[tasks."lint:name"]
+run = [{ task = "fix:name", args = ["--check"] }]
+
+[tasks."lint:configs"]
+depends = ["lint:configs:cargo", "lint:configs:fnox"]
+
+[tasks."lint:configs:cargo"]
+run = [{ task = "fix:cargo", args = ["--check"] }]
+
+[tasks."lint:configs:fnox"]
+run = [{ task = "fix:fnox" }]
+
+[tasks."lint:code"]
+run = "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings"
+
+[tasks."lint:code:style"]
+run = "cargo fmt --all -- --check"
+
+[tasks."lint:docs"]
+run = "rumdl check"
+
+[tasks."test:code"]
+run = "fnox --profile test exec -- cargo nextest run --locked --workspace --all-features --no-tests warn"
+
+[tasks."test:code:integration"]
+# see also: "agent:test:code:integration"
+# `--test-threads 1` because integration tests must be run sequentially
+run = [{ task = "test:code", args = ["--ignore-default-filter", "--max-fail", "1", "--test-threads", "1", "integration_tests::"] }]
+
+[tasks."test:code:slow"]
+# see also: "agent:test:code:slow"
+# `--test-threads` is omitted because slow tests may be run in parallel
+run = [{ task = "test:code", args = ["--ignore-default-filter", "--max-fail", "1", "slow_tests::"] }]
+
+[tasks."test:docs"]
+env = { RUSTDOCFLAGS = "-D warnings" }
+run = "cargo test --locked --workspace --doc --all-features --no-fail-fast --quiet"
+
+[tasks."pre-commit"]
+alias = "pre-merge-commit"
+run = [{ task = "git:validate-commit" }]
+
+# Compatibility for existing clones whose generated post-commit hook still invokes this task. The installer removes that hook during this one-time migration.
+[tasks."post-commit"]
+hide = true
+run = [{ task = "git:install-hooks" }]
+
+[tasks."commit-msg"]
+run = 'mise run --output interleave commitlint -- --edit "$@"'
+
+[tasks."fix"]
+depends = ["fix:code", "fix:aux"]
+
+[tasks."fix:aux"]
+depends = ["fix:configs", "fix:docs", "fix:agents", "fix:readme"]
+
+[tasks."fix:configs"]
+depends = ["fix:cargo", "fix:fnox"]
+
+[tasks."fix:code"]
+depends = ["fix:name", "fix:code:style"]
+
+[tasks."fix:code:warnings"]
+depends = ["fix:cargo"]
+# second pass is needed because "cargo clippy --fix" exits with 0 even if some warnings remain
+env = { __CARGO_FIX_YOLO = 'yeah' }
+run = [
+    "cargo clippy --workspace --all-targets --all-features --fix --allow-dirty --allow-staged",
+    { task = "lint:code" },
+]
+
+[tasks."fix:code:style"]
+# Run after `fix:code:warnings` because both tasks modify the same code files.
+depends = ["fix:code:warnings"]
+run = "cargo fmt --all"
+
+[tasks."fix:docs"]
+depends = ["fix:agents", "fix:readme"]
+# use `rumdl check --fix` instead of `rumdl fmt` because `rumdl check --fix` exits with 1 if errors remain (since v0.1.0)
+run = "rumdl check --fix"
+
+[tasks."fix:agents"]
+# "fix:agents" depends on "fix:code" because it reads the code files
+depends = ["fix:name", "fix:configs", "fix:code"]
+run = [{ task = "gen:agents" }]
+
+[tasks."gen:readme"]
+run = "./README.ts"
+
+[tasks."gen:agents"]
+run = "./AGENTS.ts"
+
+[tasks."commitlint"]
+run = "commitlint --extends \"$(mise where npm:@commitlint/config-conventional)/node_modules/@commitlint/config-conventional/lib/index.js\""
+
+[tasks."agent:docs:list"]
+run = "[ -d .agents/docs ] && find .agents/docs -type f -print || true"
+output = "interleave"
+quiet = true
+
+[tasks."agent:on:stop"]
+depends = ["cargo:validate-config"]
+run = [{ task = "fix" }, { task = "agent:test" }]
+
+[tasks."agent:test"]
+depends = ["agent:test:code", "agent:test:code:integration", "agent:test:code:slow", "test:docs"]
+
+[tasks."agent:test:code"]
+# don't include `--fail-fast` because it's better to let the agent see all failures
+# reduce output to save tokens
+run = [{ task = "test:code", args = ["--cargo-quiet", "--hide-progress-bar", "--status-level", "fail", "--final-status-level", "flaky"] }]
+
+[tasks."agent:test:code:integration"]
+# see also: "test:code:integration"
+# `--test-threads 1` because integration tests must be run sequentially
+run = [{ task = "test:code", args = ["--cargo-quiet", "--hide-progress-bar", "--status-level", "fail", "--final-status-level", "flaky", "--ignore-default-filter", "--max-fail", "1", "--test-threads", "1", "integration_tests::"] }]
+
+[tasks."agent:test:code:slow"]
+# see also: "test:code:slow"
+# `--test-threads` is omitted because slow tests may be run in parallel
+run = [{ task = "test:code", args = ["--cargo-quiet", "--hide-progress-bar", "--status-level", "fail", "--final-status-level", "flaky", "--ignore-default-filter", "--max-fail", "1", "slow_tests::"] }]
+```
+
+#### fnox.toml
+
+```toml
+#:schema https://fnox.jdx.dev/schema.json
+
+if_missing = "error"
+
+[providers]
+keychain = { type = "keychain", service = "rust-private-lib-template" }
+pass = { type = "password-store", prefix = "rust-private-lib-template/" }
+```
 
 #### Cargo.toml
 
