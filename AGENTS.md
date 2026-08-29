@@ -498,6 +498,39 @@ Notes:
 
 - Should match the thread topic
 
+#### Chat thread id heading
+
+A Markdown heading level 3 that contains only [chat thread id](#chat-thread-id).
+
+Examples:
+
+- `### RVC`
+- `### AKE`
+- `### LMY`
+
+#### findings.md
+
+- If it exists:
+  - Must contain a non-empty list of [findings](#finding)
+
+#### Finding
+
+- Must be formatted as `### {ctid}\n\n[{priority}] {title}. {body} ({references}). Proposed fixes: {fixes}`
+  - `ctid` must be a [chat thread id](#chat-thread-id)
+  - `priority` must be one of `P0`, `P1`, `P2`, `P3`.
+  - `references` must be a comma-separated list of `reference`
+  - `reference` must must be formatted as `{path}:{line}`
+  - `path` must be a file path relative to your working directory
+  - `line` must be the first line of the relevant code or text block
+  - `fixes` must be one of the following:
+    - If there is at least one proposed fix:
+      - Then: "\n\n" and a Markdown nested list of fixes where each fix must have a format `{number}. {description}` (the numbers should start from 1 for each list of fixes)
+      - Else: the exact text "none."
+
+#### Publishable package
+
+A package that has a remote whose name contains `public` or `pre-public` and ends with `template`.
+
 ### Concepts for `timestamp-please`
 
 #### `timestamp-please` package
@@ -1839,6 +1872,15 @@ cfg_if::cfg_if! {
 }
 ````
 
+### Project info
+
+#### `git remote`
+
+```shell
+origin
+repoconf-rust-public-lib-template
+```
+
 ### Project files
 
 #### mise.toml
@@ -2014,8 +2056,8 @@ if_missing = "error"
 env = "exec"
 
 [providers]
-keychain = { type = "keychain", service = "rust-private-lib-template" }
-pass = { type = "password-store", prefix = "rust-private-lib-template/" }
+keychain = { type = "keychain", service = "timestamp-please" }
+pass = { type = "password-store", prefix = "timestamp-please/" }
 age = { type = "age", recipients = [
     "age1sf4r4amev2svqr6llwg8hgtz9n7p5qdh7hh0mavcshzfrmgfduksnq3hql",
     "age1605gsnxpe536sprwccyumq74veg0g80u55n8ggems0t8deau6qdsfnq3m3"
@@ -2107,18 +2149,6 @@ time = { version = "0.3", optional = true }
 default = ["std"]
 std = ["dep:errgonomic", "dep:thiserror"]
 time = ["dep:time", "dep:errgonomic", "dep:thiserror"]
-```
-
-#### fnox.toml
-
-```toml
-#:schema https://fnox.jdx.dev/schema.json
-
-if_missing = "error"
-
-[providers]
-keychain = { type = "keychain", service = "timestamp-please" }
-pass = { type = "password-store", prefix = "timestamp-please/" }
 ```
 
 #### src/lib.rs

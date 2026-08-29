@@ -342,6 +342,19 @@ mod interop_time {
         }
     }
 
+    impl TryFrom<Timestamp<u64, MILLI>> for OffsetDateTime {
+        type Error = ComponentRange;
+
+        #[inline]
+        fn try_from(timestamp: Timestamp<u64, MILLI>) -> Result<Self, Self::Error> {
+            // `u64::MAX * 1_000_000` is less than `i128::MAX`, so this multiplication cannot overflow.
+            #[allow(clippy::arithmetic_side_effects)]
+            let nanoseconds = i128::from(timestamp.value) * 1_000_000;
+            let timestamp = Timestamp::<i128, NANO>::new(nanoseconds);
+            Self::try_from(timestamp)
+        }
+    }
+
     impl TryFrom<OffsetDateTime> for Timestamp<u64, MILLI> {
         type Error = TimestampOffsetDateTimeConversionError;
 
