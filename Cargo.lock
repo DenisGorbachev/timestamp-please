@@ -104,9 +104,9 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "errgonomic"
-version = "0.5.1"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74b33711745064fd87e330345058524fb009a7e8767c3ede875c61550b179d45"
+checksum = "eec2d86c5cf47aed488f1b449df946eaef15aabd96a4fa13aa3d906a03a90618"
 dependencies = [
  "cfg-if",
  "thiserror",
