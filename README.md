@@ -8,6 +8,9 @@
 [![Documentation](https://docs.rs/timestamp-please/badge.svg)](https://docs.rs/timestamp-please)
 
 <!-- crate documentation start -->
+Enable the optional `uuid` feature for checked conversions between [`Timestamp`] and `uuid::Timestamp`, including in `no_std` builds. Conversions preserve the Unix time value and reject overflow, negative times, and loss of precision. UUID clock counters and their usable bit counts are discarded on input; output always uses `uuid::NoContext`.
+
+[`Timestamp`]: https://docs.rs/timestamp-please/latest/timestamp_please/struct.Timestamp.html
 
 <!-- crate documentation end -->
 

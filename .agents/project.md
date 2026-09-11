@@ -14,6 +14,8 @@ Requirements:
   * Every conversion must either:
     * Be an infallible conversion that fully preserves the underlying data (not truncate, not clamp, not `unwrap`, not return a default value)
     * Be a fallible conversion that fully preserves the underlying data if it's possible or returns an error if it's impossible
+      * Exception: conversions from `uuid::Timestamp` must discard clock counters and their usable bit counts.
+  * Conversions to `uuid::Timestamp` must use `uuid::NoContext`.
 * Must support integer primitive storage types starting from 32 bits:
   * `u32`, `i32`
   * `u64`, `i64`
@@ -44,6 +46,7 @@ Examples:
 * `std`
 * `time`
 * `chrono`
+* `uuid`
 
 Notes:
 
@@ -60,6 +63,7 @@ Examples:
 * `time::OffsetDateTime`
 * `chrono::DateTime<chrono::Utc>`
 * `chrono::NaiveDateTime`
+* `uuid::Timestamp`
 
 Notes:
 

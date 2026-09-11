@@ -1,0 +1,1 @@
+pub const NANOS_PER_SECOND: u128 = 1_000_000_000;

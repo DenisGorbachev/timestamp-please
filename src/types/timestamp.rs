@@ -223,9 +223,10 @@ mod interop_std {
                 $(#[$meta])*
                 #[inline]
                 fn from(system_time: SystemTime) -> Self {
+                    // Post-epoch input is assumed for modern-machine usage; violating that assumption intentionally panics.
                     let duration = system_time
                         .duration_since(UNIX_EPOCH)
-                        .expect("always succeeds because UNIX_EPOCH is the minimum possible value");
+                        .expect("system time must be at or after the Unix epoch");
                     Self::from(duration)
                 }
             }
@@ -432,3 +433,81 @@ mod interop_chrono {
 
 #[cfg(feature = "chrono")]
 pub use interop_chrono::*;
+
+#[cfg(feature = "uuid")]
+mod interop_uuid {
+    use super::*;
+    use crate::{NANOS_PER_SECOND, RescaleTimestampError, rescale_timestamp};
+    use core::any::type_name;
+    use core::num::TryFromIntError;
+    use errgonomic::handle;
+    use thiserror::Error;
+    use uuid::{NoContext, Timestamp as UuidTimestamp};
+
+    macro_rules! impl_uuid_interop {
+        ($($storage:ty),+ $(,)?) => {$(
+            /// Converts the Unix time value exactly. UUID clock counters and their usable bit counts are discarded and cannot be recovered by converting back.
+            impl<const POWER: i32> TryFrom<UuidTimestamp> for Timestamp<$storage, POWER> {
+                type Error = TimestampFromUuidError;
+
+                /// Returns an error if the target storage or power cannot represent the time exactly.
+                #[inline]
+                fn try_from(timestamp: UuidTimestamp) -> Result<Self, Self::Error> {
+                    use TimestampFromUuidError::*;
+
+                    let (seconds, subsec_nanos) = timestamp.to_unix();
+                    // `u64::MAX * 1_000_000_000 + u32::MAX` is less than `u128::MAX`.
+                    #[allow(clippy::arithmetic_side_effects)]
+                    let nanoseconds = u128::from(seconds) * NANOS_PER_SECOND + u128::from(subsec_nanos);
+                    let power = POWER;
+                    let value = handle!(rescale_timestamp(nanoseconds, NANO, power), RescaleFailed, timestamp, power);
+                    let storage = type_name::<$storage>();
+                    let value = handle!(<$storage>::try_from(value), ValueOutOfRange, timestamp, power, storage, value);
+                    Ok(Self::new(value))
+                }
+            }
+
+            impl<const POWER: i32> TryFrom<Timestamp<$storage, POWER>> for UuidTimestamp {
+                type Error = TimestampIntoUuidError<$storage, POWER>;
+
+                /// Converts the time exactly using `NoContext`, with no UUID clock counter.
+                ///
+                /// Returns an error for negative times, values beyond `u64::MAX` seconds, or a fractional nanosecond remainder.
+                #[inline]
+                fn try_from(timestamp: Timestamp<$storage, POWER>) -> Result<Self, Self::Error> {
+                    use TimestampIntoUuidError::*;
+
+                    let value = handle!(u128::try_from(timestamp.value), BeforeUnixEpoch, timestamp);
+                    let nanoseconds = handle!(rescale_timestamp(value, POWER, NANO), RescaleFailed, timestamp);
+                    let seconds = handle!(u64::try_from(nanoseconds / NANOS_PER_SECOND), SecondsOutOfRange, timestamp);
+                    // The remainder is below 1_000_000_000, so it fits in `u32`.
+                    let subsec_nanos = (nanoseconds % NANOS_PER_SECOND) as u32;
+                    Ok(Self::from_unix(NoContext, seconds, subsec_nanos))
+                }
+            }
+        )+};
+    }
+
+    impl_uuid_interop!(u32, i32, u64, i64, u128, i128);
+
+    #[derive(Error, Copy, Clone, Debug)]
+    pub enum TimestampFromUuidError {
+        #[error("UUID timestamp {timestamp:?} cannot be represented with power {power}")]
+        RescaleFailed { source: RescaleTimestampError, timestamp: UuidTimestamp, power: i32 },
+        #[error("UUID timestamp {timestamp:?} requires value {value} with power {power}, outside the range of {storage}")]
+        ValueOutOfRange { source: TryFromIntError, timestamp: UuidTimestamp, power: i32, storage: &'static str, value: u128 },
+    }
+
+    #[derive(Error, Copy, Clone, Debug)]
+    pub enum TimestampIntoUuidError<V, const POWER: i32> {
+        #[error("timestamp {timestamp} with power {POWER} is before the Unix epoch")]
+        BeforeUnixEpoch { source: TryFromIntError, timestamp: Timestamp<V, POWER> },
+        #[error("timestamp {timestamp} with power {POWER} cannot be represented in u128 nanoseconds")]
+        RescaleFailed { source: RescaleTimestampError, timestamp: Timestamp<V, POWER> },
+        #[error("timestamp {timestamp} with power {POWER} exceeds u64::MAX seconds")]
+        SecondsOutOfRange { source: TryFromIntError, timestamp: Timestamp<V, POWER> },
+    }
+}
+
+#[cfg(feature = "uuid")]
+pub use interop_uuid::*;
