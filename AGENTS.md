@@ -2256,6 +2256,13 @@ age = { type = "age", recipients = [
 resolver = "3"
 
 [workspace.dependencies]
+chrono = { version = "0.4", default-features = true }
+errgonomic = { version = "0.5.3", default-features = false }
+itoa = "1.0.17"
+rkyv = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = { version = "2", default-features = false }
+time = "0.3"
 uuid = { version = "1.26.0", default-features = false }
 
 [workspace.package]
@@ -2325,27 +2332,23 @@ announcement = ""
 workspace = true
 
 [dependencies]
-chrono = { version = "0.4", optional = true, default-features = true }
-errgonomic = { version = "0.5.3", optional = true, default-features = false }
-itoa = "1.0.17"
-rkyv = { version = "0.8", optional = true }
-serde = { version = "1.0", optional = true, features = ["derive"] }
-thiserror = { version = "2", optional = true, default-features = false }
-time = { version = "0.3", optional = true }
+chrono = { workspace = true, optional = true }
+errgonomic.workspace = true
+itoa.workspace = true
+rkyv = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+thiserror.workspace = true
+time = { workspace = true, optional = true }
 uuid = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
-std = ["dep:errgonomic", "dep:thiserror"]
-time = ["dep:time", "dep:errgonomic", "dep:thiserror"]
-uuid = ["dep:uuid", "dep:errgonomic", "dep:thiserror"]
+std = []
 ```
 
 ### src/lib.rs
 
 ```rust
-//! Enable the optional `uuid` feature for checked conversions between [`Timestamp`] and `uuid::Timestamp`, including in `no_std` builds. Conversions preserve the Unix time value and reject overflow, negative times, and loss of precision. UUID clock counters and their usable bit counts are discarded on input; output always uses `uuid::NoContext`.
-
 #![no_std]
 #![deny(clippy::arithmetic_side_effects)]
 #![cfg_attr(not(test), deny(unused_crate_dependencies))]
@@ -2361,13 +2364,9 @@ pub mod as_string;
 #[cfg(feature = "serde")]
 pub use as_string::*;
 
-#[cfg(feature = "uuid")]
 mod constants;
-#[cfg(feature = "uuid")]
 pub use constants::*;
 
-#[cfg(feature = "uuid")]
 mod functions;
-#[cfg(feature = "uuid")]
 pub use functions::*;
 ```
