@@ -3,6 +3,7 @@ use core::fmt;
 use core::iter::repeat_n;
 use core::ops::{Deref, DerefMut};
 use core::time::Duration;
+use derive_more::FromStr;
 
 const MAX_POW10_U128: u64 = 38;
 
@@ -13,7 +14,7 @@ const MAX_POW10_U128: u64 = 38;
 ///
 /// With the `uuid` feature, the six supported storage types provide `try_from_uuid` and `try_into_uuid` for every power. `From` is available for infallible combinations, and `TryFrom` is available for all six storage types at `UNO`, `MILLI`, `MICRO`, and `NANO` powers.
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
+#[derive(FromStr, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 #[cfg_attr(feature = "rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
