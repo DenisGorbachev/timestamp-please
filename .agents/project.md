@@ -10,23 +10,23 @@ A Rust crate that exports a generic `Timestamp` type that represents the count o
 
 Requirements:
 
-* Must provide conversions to and from [foreign timekeeping types](#foreign-timekeeping-type)
-  * Every conversion must either:
-    * Be an infallible conversion that fully preserves the underlying data (not truncate, not clamp, not `unwrap`, not return a default value)
-    * Be a fallible conversion that fully preserves the underlying data if it's possible or returns an error if it's impossible
-      * Exception: conversions from `uuid::Timestamp` must discard clock counters and their usable bit counts.
-  * Conversions to `uuid::Timestamp` must use `uuid::NoContext`.
-* Must support integer primitive storage types starting from 32 bits:
-  * `u32`, `i32`
-  * `u64`, `i64`
-  * `u128`, `i128`
-* Must not support floating point storage types
+- Must provide conversions to and from [foreign timekeeping types](#foreign-timekeeping-type)
+  - Every conversion must either:
+    - Be an infallible conversion that fully preserves the underlying data (not truncate, not clamp, not `unwrap`, not return a default value)
+    - Be a fallible conversion that fully preserves the underlying data if it's possible or returns an error if it's impossible
+      - Exception: conversions from `uuid::Timestamp` must discard clock counters and their usable bit counts.
+  - Conversions to `uuid::Timestamp` must use `uuid::NoContext`.
+- Must support integer primitive storage types starting from 32 bits:
+  - `u32`, `i32`
+  - `u64`, `i64`
+  - `u128`, `i128`
+- Must not support floating point storage types
 
 ## Storage types
 
-* Every storage type has a min and max value
-  * Some physical values can only be represented with a combination of storage type and a power constant
-* `u128` has the highest max value among the primitive storage types
+- Every storage type has a min and max value
+  - Some physical values can only be represented with a combination of storage type and a power constant
+- `u128` has the highest max value among the primitive storage types
 
 ### Value ranges
 
@@ -42,15 +42,15 @@ A crate that provides timekeeping-related types.
 
 Examples:
 
-* `core`
-* `std`
-* `time`
-* `chrono`
-* `uuid`
+- `core`
+- `std`
+- `time`
+- `chrono`
+- `uuid`
 
 Notes:
 
-* This crate integrates only with the foreign timekeeping crates mentioned above
+- This crate integrates only with the foreign timekeeping crates mentioned above
 
 ## Foreign timekeeping type
 
@@ -58,18 +58,18 @@ A type from a foreign timekeeping crate.
 
 Examples:
 
-* `core::time::Duration`
-* `std::time::SystemTime`
-* `time::OffsetDateTime`
-* `chrono::DateTime<chrono::Utc>`
-* `chrono::NaiveDateTime`
-* `uuid::Timestamp`
+- `core::time::Duration`
+- `std::time::SystemTime`
+- `time::OffsetDateTime`
+- `chrono::DateTime<chrono::Utc>`
+- `chrono::NaiveDateTime`
+- `uuid::Timestamp`
 
 Notes:
 
-* The constructors of foreign types accept only specific storage types
-  * Examples
-    * `core::time::Duration::from_nanos` accepts only `u64`
+- The constructors of foreign types accept only specific storage types
+  - Examples
+    - `core::time::Duration::from_nanos` accepts only `u64`
 
 ## Foreign timekeeping crate interop module
 
@@ -77,14 +77,14 @@ A Rust module that implements conversions between the types from [this crate](#t
 
 Requirements:
 
-* Must be feature-gated
-* Must `use` the items from the foreign crate
-* Must contain a `use super::*;` declaration
+- Must be feature-gated
+- Must `use` the items from the foreign crate
+- Must contain a `use super::*;` declaration
 
 ## std interop module
 
 ## `pub mod as_string`
 
-* Must be gated behind `serde` feature
-* Must contain `pub fn serialize` and `pub fn deserialize`
-  * Must operate on `Timestamp`
+- Must be gated behind `serde` feature
+- Must contain `pub fn serialize` and `pub fn deserialize`
+  - Must operate on `Timestamp`
