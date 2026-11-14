@@ -12,7 +12,7 @@ const MAX_POW10_U128: u64 = 38;
 /// - `Value`: integer-like storage (e.g. `u64`)
 /// - `POWER`: base-10 exponent (e.g. `-3` for milliseconds)
 ///
-/// With the `uuid` feature, the six supported storage types provide `try_from_uuid` and `try_into_uuid` for every power. `From` is available for infallible combinations, and `TryFrom` is available for all six storage types at `UNO`, `MILLI`, `MICRO`, and `NANO` powers.
+/// With the `uuid` feature, integer storage types provide `try_from_uuid` and `try_into_uuid` for every power. `From` is available for infallible combinations, and `TryFrom` is available for `u32`, `i32`, `u64`, `i64`, `u128`, `i128` at `UNO`, `MILLI`, `MICRO`, and `NANO` powers.
 #[repr(transparent)]
 #[derive(FromStr, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -447,40 +447,45 @@ mod interop_uuid {
     use thiserror::Error;
     use uuid::{NoContext, Timestamp as UuidTimestamp};
 
-    macro_rules! impl_uuid_checked_methods {
-        ($($storage:ty),+ $(,)?) => {$(
-            impl<const POWER: i32> Timestamp<$storage, POWER> {
-                /// Converts the Unix time value exactly at any power. UUID clock counters and their usable bit counts are discarded and cannot be recovered by converting back.
-                ///
-                /// Returns an error if the storage or power cannot represent the time exactly.
-                #[inline]
-                pub fn try_from_uuid(timestamp: UuidTimestamp) -> Result<Self, TimestampFromUuidError> {
-                    use TimestampFromUuidError::*;
+    impl<V, const POWER: i32> Timestamp<V, POWER> {
+        /// Converts the Unix time value exactly at any power. UUID clock counters and their usable bit counts are discarded and cannot be recovered by converting back.
+        ///
+        /// Returns an error if the storage or power cannot represent the time exactly.
+        #[inline]
+        pub fn try_from_uuid(timestamp: UuidTimestamp) -> Result<Self, TimestampFromUuidError>
+        where
+            V: TryFrom<u128>,
+            TryFromIntError: From<V::Error>,
+        {
+            use TimestampFromUuidError::*;
 
-                    let nanoseconds = Timestamp::<u128, NANO>::from(timestamp).into_value();
-                    let power = POWER;
-                    let value = handle!(rescale_timestamp(nanoseconds, NANO, power), RescaleFailed, timestamp, power);
-                    let storage = type_name::<$storage>();
-                    let value = handle!(<$storage>::try_from(value), ValueOutOfRange, timestamp, power, storage, value);
-                    Ok(Self::new(value))
-                }
-                /// Converts the time exactly at any power using `NoContext`, with no UUID clock counter.
-                ///
-                /// Returns an error for negative times, values beyond `u64::MAX` seconds, or a fractional nanosecond remainder.
-                #[inline]
-                pub fn try_into_uuid(self) -> Result<UuidTimestamp, TimestampIntoUuidError<$storage, POWER>> {
-                    use TimestampIntoUuidError::*;
+            let nanoseconds = Timestamp::<u128, NANO>::from(timestamp).into_value();
+            let power = POWER;
+            let value = handle!(rescale_timestamp(nanoseconds, NANO, power), RescaleFailed, timestamp, power);
+            let storage = type_name::<V>();
+            let value = handle!(<V>::try_from(value), ValueOutOfRange, timestamp, power, storage, value);
+            Ok(Self::new(value))
+        }
+        /// Converts the time exactly at any power using `NoContext`, with no UUID clock counter.
+        ///
+        /// Returns an error for negative times, values beyond `u64::MAX` seconds, or a fractional nanosecond remainder.
+        #[inline]
+        pub fn try_into_uuid(self) -> Result<UuidTimestamp, TimestampIntoUuidError<V, POWER>>
+        where
+            V: Copy,
+            u128: TryFrom<V>,
+            TryFromIntError: From<<u128 as TryFrom<V>>::Error>,
+        {
+            use TimestampIntoUuidError::*;
 
-                    let timestamp = self;
-                    let value = handle!(u128::try_from(timestamp.value), BeforeUnixEpoch, timestamp);
-                    let nanoseconds = handle!(rescale_timestamp(value, POWER, NANO), RescaleFailed, timestamp);
-                    let seconds = handle!(u64::try_from(nanoseconds / NANOS_PER_SECOND), SecondsOutOfRange, timestamp);
-                    // The remainder is below 1_000_000_000, so it fits in `u32`.
-                    let subsec_nanos = (nanoseconds % NANOS_PER_SECOND) as u32;
-                    Ok(UuidTimestamp::from_unix(NoContext, seconds, subsec_nanos))
-                }
-            }
-        )+};
+            let timestamp = self;
+            let value = handle!(u128::try_from(timestamp.value), BeforeUnixEpoch, timestamp);
+            let nanoseconds = handle!(rescale_timestamp(value, POWER, NANO), RescaleFailed, timestamp);
+            let seconds = handle!(u64::try_from(nanoseconds / NANOS_PER_SECOND), SecondsOutOfRange, timestamp);
+            // The remainder is below 1_000_000_000, so it fits in `u32`.
+            let subsec_nanos = (nanoseconds % NANOS_PER_SECOND) as u32;
+            Ok(UuidTimestamp::from_unix(NoContext, seconds, subsec_nanos))
+        }
     }
 
     macro_rules! impl_from_uuid {
@@ -544,8 +549,6 @@ mod interop_uuid {
             }
         )+};
     }
-
-    impl_uuid_checked_methods!(u32, i32, u64, i64, u128, i128);
 
     impl_from_uuid!(u128; -19, -18, -17, -16, -15, -14, -13, -12, -11, -10, NANO);
     impl_from_uuid!(i128; -18, -17, -16, -15, -14, -13, -12, -11, -10, NANO);
